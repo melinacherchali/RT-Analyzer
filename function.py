@@ -21,10 +21,9 @@ def clean_data(df_list):
         df = df.drop(df.columns[np.where(correlation==1)[1]], axis=1) #remove one of the column with exact correlation
 
 #The transformed data has now mean 0 and standard deviation 1 in every column.
-def standardize(df_list) :
-    for df in df_list :
-        scaler = StandardScaler()
-        df = pd.DataFrame(scaler.fit_transform(df), 
-                                columns = [df.columns])
+def standardize(df) :
+    scaler = StandardScaler()
+    df = pd.DataFrame(scaler.fit_transform(df), columns = [df.columns])
+    
     
 
