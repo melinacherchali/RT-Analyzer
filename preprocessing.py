@@ -7,6 +7,9 @@ train_data = f.read_file('train.csv')
 test_data = f.read_file('test.csv')
 
 test_data = f.standardize(test_data)
-test = f.clean_data(test_data)
+test_data = f.clean_data(test_data)
 
-print ("means : ", test_data.mean(), "standart deviation : ", test_data.std())
+train_data = f.standardize(train_data)
+train_data = f.clean_data(train_data)
+ 
+
