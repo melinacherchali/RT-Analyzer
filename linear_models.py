@@ -5,19 +5,19 @@ import numpy as np
 import matplotlib.pyplot as plt
 import function as f 
 
-#load_data
+# Load data
 train_data = f.get_processed_data('train.csv')
 test_data = f.get_processed_data('test.csv')
 
 # Split features and target variable
-X = train_data.drop('RT', axis=1)  
+X = train_data.sort_index(axis=1).drop('RT', axis=1)  
 y_pred= train_data['RT']
 
 # Define the RidgeRegressor model
 model = Ridge()
 
 # Define the parameter grid for hyperparameter tuning
-param_grid = {'alpha': np.logspace(-10, -3, 100)}
+param_grid = {'alpha': np.logspace(-5, 0, 100)}
 
 # Perform GridSearchCV for hyperparameter tuning
 grid_search = GridSearchCV(estimator=model, param_grid=param_grid, cv=5, scoring='neg_mean_squared_error')
@@ -39,5 +39,7 @@ plt.scatter(predictions, y_pred.iloc[train_subset:], label="Predictions vs Actua
 plt.plot(np.arange(len(predictions)), np.arange(len(predictions)), c="black", ls="dashed", label="y=x")
 plt.xlabel("Predictions")
 plt.ylabel("Actual Values")
+plt.xlim(0, 6)
+plt.ylim(0, 4)
 plt.legend()
 plt.show()
