@@ -1,9 +1,53 @@
 from sklearn.linear_model import Ridge
+from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import GridSearchCV
-from sklearn.metrics import mean_squared_error
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 import function as f 
+
+""" --------------------------------------------------- Linear Regression --------------------------------------------------- """
+# Load data
+train_data = f.read_file('train.csv')
+test_data = f.read_file('test.csv')
+#train_data = f.get_processed_data('train.csv')
+#test_data = f.get_processed_data('test.csv')
+
+columns_to_drop = ['Compound', 'SMILES', 'RT', 'mol']
+test_data = test_data.drop(['Compound', 'SMILES', 'mol'], axis=1)
+
+X = train_data.drop(columns=columns_to_drop)
+
+#OneHotEncoder on X
+enc = OneHotEncoder(drop='first', sparse_output=False)
+lab_encoded = enc.fit_transform(X[['Lab']])
+lab_encoded_df = pd.DataFrame(lab_encoded, columns=enc.get_feature_names_out(['Lab']))
+data_X_encoded = pd.concat([X.drop(['Lab'], axis=1), lab_encoded_df], axis=1)
+
+#OneHotEncoder on Y
+test_lab_encoded = enc.transform(test_data[['Lab']])
+test_lab_encoded_df = pd.DataFrame(test_lab_encoded, columns=enc.get_feature_names_out(['Lab']))
+test_data_encoded = pd.concat([test_data.drop(['Lab'], axis=1), test_lab_encoded_df], axis=1)
+
+
+# separate the features (X) and the target variable (y)
+X = data_X_encoded
+y = train_data['RT']
+
+# Define model
+model = LinearRegression()
+
+# fit the model to the entire training set if you plan to make predictions
+model.fit(X, y)
+
+# make predictions
+predictions = model.predict(test_data_encoded)
+
+
+"""--------------------------------------------------- Ridge Regression --------------------------------------------------- 
 
 # Load data
 train_data = f.get_processed_data('train.csv')
@@ -42,4 +86,4 @@ plt.ylabel("Actual Values")
 plt.xlim(0, 6)
 plt.ylim(0, 4)
 plt.legend()
-plt.show()
+plt.show() """
