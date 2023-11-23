@@ -17,7 +17,7 @@ y_pred= train_data['RT']
 model = Ridge()
 
 # Define the parameter grid for hyperparameter tuning
-param_grid = {'alpha': np.logspace(-5, 0, 100)}
+param_grid = {'alpha': np.logspace(-5, 7, 100)} # this range finds better alpha
 
 # Perform GridSearchCV for hyperparameter tuning
 grid_search = GridSearchCV(estimator=model, param_grid=param_grid, cv=5, scoring='neg_mean_squared_error')
@@ -25,6 +25,7 @@ grid_search.fit(X, y_pred)
 
 # Get the best model from the grid search
 best_model = grid_search.best_estimator_
+print(grid_search.best_estimator_.alpha)
 
 # Fit the best model to a subset of the data
 train_subset = 2800  # Define the size of the training subset
