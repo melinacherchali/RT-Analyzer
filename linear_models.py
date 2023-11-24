@@ -8,44 +8,46 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import function as f 
 
-""" --------------------------------------------------- Linear Regression --------------------------------------------------- """
 # Load data
 train_data = f.read_file('train.csv')
 test_data = f.read_file('test.csv')
-#train_data = f.get_processed_data('train.csv')
-#test_data = f.get_processed_data('test.csv')
 
-columns_to_drop = ['Compound', 'SMILES', 'RT', 'mol']
+# drop categorical values
 test_data = test_data.drop(['Compound', 'SMILES', 'mol'], axis=1)
-
-X = train_data.drop(columns=columns_to_drop)
+train_data = train_data.drop(['Compound', 'SMILES','mol'], axis=1)
 
 #OneHotEncoder on X
-enc = OneHotEncoder(drop='first', sparse_output=False)
-lab_encoded = enc.fit_transform(X[['Lab']])
-lab_encoded_df = pd.DataFrame(lab_encoded, columns=enc.get_feature_names_out(['Lab']))
-data_X_encoded = pd.concat([X.drop(['Lab'], axis=1), lab_encoded_df], axis=1)
+train_data_encoded = f.apply_one_hot_encoding(train_data, 'Lab')
 
-#OneHotEncoder on test
-test_lab_encoded = enc.transform(test_data[['Lab']])
-test_lab_encoded_df = pd.DataFrame(test_lab_encoded, columns=enc.get_feature_names_out(['Lab']))
-test_data_encoded = pd.concat([test_data.drop(['Lab'], axis=1), test_lab_encoded_df], axis=1)
+#OneHotEncoder on test_data
+test_data_encoded = f.apply_one_hot_encoding(test_data, 'Lab')
+
+# identify columns to drop from the training data
+columns_to_drop = f.identify_columns_to_drop(train_data_encoded)
+
+# Then, clean both train and test data using these columns
+train_data_cleaned = f.clean_data(train_data_encoded, columns_to_drop)
+test_data_cleaned = f.clean_data(test_data_encoded, columns_to_drop)
 
 # separate the features (X) and the target variable (y)
 train_subset = 2800
-X = data_X_encoded.iloc[:train_subset, :]
-y = train_data['RT'].iloc[:train_subset]
+X = train_data_cleaned .drop(['RT'], axis=1)
+X_subset = X.iloc[:train_subset, :]
+y = train_data_cleaned['RT'].iloc[:train_subset]
 
-# Define model
+""" --------------------------------------------------- Linear Regression --------------------------------------------------- """
+
+""" # Define model
 model = LinearRegression()
 
 # fit the model to the entire training set if you plan to make predictions
-model.fit(X, y)
+model.fit(X_subset, y)
 
 # make predictions
-predictions = model.predict(data_X_encoded.iloc[train_subset:, :])
+predictions = model.predict(X.iloc[train_subset:, :])
+print (predictions)  """
 
-# Plot the predictions against actual values
+""" # Plot the predictions against actual values
 plt.figure()
 plt.scatter(predictions,  train_data['RT'].iloc[train_subset:], label="Predictions vs Actual Values")
 plt.plot(np.arange(len(predictions)), np.arange(len(predictions)), c="black", ls="dashed", label="y=x")
@@ -54,7 +56,7 @@ plt.ylabel("Actual Values")
 plt.xlim(0, 30)
 plt.ylim(0, 30)
 plt.legend()
-plt.show() 
+plt.show()  """
 
 
 """--------------------------------------------------- Ridge Regression --------------------------------------------------- 
