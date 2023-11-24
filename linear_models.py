@@ -3,7 +3,6 @@ from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import GridSearchCV
-from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -36,6 +35,8 @@ test_data_encoded = pd.concat([test_data.drop(['Lab'], axis=1), test_lab_encoded
 # separate the features (X) and the target variable (y)
 X = data_X_encoded
 y = train_data['RT']
+print(X)
+print (y)
 
 # Define model
 model = LinearRegression()
