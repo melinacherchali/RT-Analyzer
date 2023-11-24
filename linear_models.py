@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import function as f 
 
 """ --------------------------------------------------- Linear Regression --------------------------------------------------- """
+
 # Load data
 train_data = f.read_file('train.csv')
 test_data = f.read_file('test.csv')
@@ -38,12 +39,19 @@ y = train_data['RT'].iloc[:train_subset]
 
 # Define model
 model = LinearRegression()
-
+cv = cross_val_score(model,X,y)
+print(cv)
 # fit the model to the entire training set if you plan to make predictions
 model.fit(X, y)
 
 # make predictions
-predictions = model.predict(data_X_encoded.iloc[train_subset:, :])
+predictions = pd.DataFrame(model.predict(data_X_encoded.iloc[train_subset:, :]))
+
+print(predictions)
+# f.make_submission(pd.DataFrame(predictions))
+# print([np.abs(p)>5000 for p in predictions])
+# print(predictions[predictions[0] > 5000])
+
 
 # Plot the predictions against actual values
 plt.figure()
@@ -51,8 +59,8 @@ plt.scatter(predictions,  train_data['RT'].iloc[train_subset:], label="Predictio
 plt.plot(np.arange(len(predictions)), np.arange(len(predictions)), c="black", ls="dashed", label="y=x")
 plt.xlabel("Predictions")
 plt.ylabel("Actual Values")
-plt.xlim(0, 30)
-plt.ylim(0, 30)
+# plt.xlim(0, len(predictions))
+# plt.ylim(0, len(predictions))
 plt.legend()
 plt.show() 
 

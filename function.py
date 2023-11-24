@@ -7,10 +7,10 @@ from sklearn.preprocessing import StandardScaler
 def read_file(file_path):
     df = pd.read_csv(os.path.abspath(file_path))
     # Check if 'RT' present in columns 
-    #columns_to_keep = [col for col in df.columns if col.startswith('ECFP')]
-    #if 'RT' in df.columns:
-        #columns_to_keep = ['RT'] + columns_to_keep
-    #df = df[columns_to_keep]
+    columns_to_keep = [col for col in df.columns if col.startswith('ECFP')]
+    if 'RT' in df.columns:
+        columns_to_keep = ['RT'] + columns_to_keep
+    df = df[columns_to_keep]
     return df
 
 
@@ -39,5 +39,10 @@ def get_processed_data(file_path):
     data = clean_data(data)
     return data
 
-    
 
+def make_submission(df, file_path='submission.csv'):
+    id = pd.DataFrame(np.arange(1,len(df), dtype=int))
+    submission_df = pd.concat([id,df], axis=1)
+    submission_df.columns = ['ID','RT']
+    submission_df.to_csv(os.path.abspath(file_path), index=False)
+    print(f'Submission file saved to {file_path}')    

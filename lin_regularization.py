@@ -16,7 +16,7 @@ def tune_model(model, data):
 
     # Define the parameter grid for tuning alpha
     param_grid = {
-        'alpha': np.logspace(-5, 7, num =30)
+        'alpha': np.logspace(-1, 7, num =30)
     }
 
     # Create a grid search with cross-validation
@@ -42,14 +42,32 @@ def tune_model(model, data):
 # plt.show()
 
 # Tune the Ridge Regressor model
-res1_ridge = tune_model(Ridge(), train_data)
+X = train_data.sort_index(axis=1).drop('RT', axis=1)
+res1_ridge = tune_model(Ridge(), train_data.iloc[:2800,:])
 print("Best Alpha:", res1_ridge.best_estimator_.alpha, "Best Parameters:", res1_ridge.best_estimator_.coef_, "Best intercept:", res1_ridge.best_estimator_.intercept_)
 
+pred = pd.DataFrame(res1_ridge.best_estimator_.predict(test_data))
+print(pred)
+f.make_submission(pred,"ridge_test.csv")
+
+# Plot the predictions against actual values
+# plt.figure()
+# plt.scatter(pred,  train_data['RT'].iloc[2800:], label="Predictions vs Actual Values")
+# plt.plot(np.arange(len(pred)), np.arange(len(pred)), c="black", ls="dashed", label="y=x")
+# plt.xlabel("Predictions")
+# plt.ylabel("Actual Values")
+# plt.xlim(0, 5)
+# plt.ylim(0, 5)
+# plt.legend()
+# plt.show() 
+
+
+
 # Plot results
-plt.figure()
-plt.plot(np.logspace(-5, 7, num =30), -res1_ridge.cv_results_['mean_test_score'])
-plt.xscale('log')
-plt.xlabel('Alpha')
-plt.ylabel('RMSE')
-plt.title('Ridge Hyperparameter Tuning')
-plt.show()
+# plt.figure()
+# plt.plot(np.logspace(-5, 7, num =30), -res1_ridge.cv_results_['mean_test_score'])
+# plt.xscale('log')
+# plt.xlabel('Alpha')
+# plt.ylabel('RMSE')
+# plt.title('Ridge Hyperparameter Tuning')
+# plt.show()
