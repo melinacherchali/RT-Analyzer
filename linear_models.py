@@ -26,17 +26,15 @@ lab_encoded = enc.fit_transform(X[['Lab']])
 lab_encoded_df = pd.DataFrame(lab_encoded, columns=enc.get_feature_names_out(['Lab']))
 data_X_encoded = pd.concat([X.drop(['Lab'], axis=1), lab_encoded_df], axis=1)
 
-#OneHotEncoder on Y
+#OneHotEncoder on test
 test_lab_encoded = enc.transform(test_data[['Lab']])
 test_lab_encoded_df = pd.DataFrame(test_lab_encoded, columns=enc.get_feature_names_out(['Lab']))
 test_data_encoded = pd.concat([test_data.drop(['Lab'], axis=1), test_lab_encoded_df], axis=1)
 
-
 # separate the features (X) and the target variable (y)
-X = data_X_encoded
-y = train_data['RT']
-print(X)
-print (y)
+train_subset = 2800
+X = data_X_encoded.iloc[:train_subset, :]
+y = train_data['RT'].iloc[:train_subset]
 
 # Define model
 model = LinearRegression()
@@ -45,7 +43,18 @@ model = LinearRegression()
 model.fit(X, y)
 
 # make predictions
-predictions = model.predict(test_data_encoded)
+predictions = model.predict(data_X_encoded.iloc[train_subset:, :])
+
+# Plot the predictions against actual values
+plt.figure()
+plt.scatter(predictions,  train_data['RT'].iloc[train_subset:], label="Predictions vs Actual Values")
+plt.plot(np.arange(len(predictions)), np.arange(len(predictions)), c="black", ls="dashed", label="y=x")
+plt.xlabel("Predictions")
+plt.ylabel("Actual Values")
+plt.xlim(0, 30)
+plt.ylim(0, 30)
+plt.legend()
+plt.show() 
 
 
 """--------------------------------------------------- Ridge Regression --------------------------------------------------- 
