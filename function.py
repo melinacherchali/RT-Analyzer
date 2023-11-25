@@ -3,6 +3,7 @@ import pandas as pd
 from sklearn.preprocessing import OneHotEncoder
 import os 
 from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import KFold, GridSearchCV
 from sklearn.metrics import mean_squared_error
 import matplotlib.pyplot as plt
 
@@ -31,8 +32,30 @@ def identify_columns_to_drop(df):
 def clean_data(df, columns_to_drop):
     return df.drop(columns=columns_to_drop, axis=1)
 
+def apply_one_hot_encoding(df, column_names):
+    # Initialize the OneHotEncoder
+    enc = OneHotEncoder(drop='first', sparse_output=False)
 
-def apply_one_hot_encoding(df, column_name):
+    # Create an empty DataFrame for the new encoded columns
+    all_encoded_df = pd.DataFrame()
+
+    # Iterate over each column and apply one-hot encoding
+    for column_name in column_names:
+        # Fit and transform the column
+        encoded_data = enc.fit_transform(df[[column_name]])
+
+        # Create a DataFrame from the encoded data
+        encoded_df = pd.DataFrame(encoded_data, columns=enc.get_feature_names_out([column_name]))
+
+        # Concatenate with the previously encoded columns
+        all_encoded_df = pd.concat([all_encoded_df, encoded_df], axis=1)
+
+    # Concatenate the original DataFrame (minus the encoded columns) with the new DataFrame
+    df_encoded = pd.concat([df.drop(column_names, axis=1), all_encoded_df], axis=1)
+
+    return df_encoded
+
+""" def apply_one_hot_encoding(df, column_name):
     # Initialize the OneHotEncoder
     enc = OneHotEncoder(drop='first', sparse_output=False)
 
@@ -45,20 +68,8 @@ def apply_one_hot_encoding(df, column_name):
     # Concatenate the original DataFrame (minus the encoded column) with the new DataFrame
     df_encoded = pd.concat([df.drop([column_name], axis=1), encoded_df], axis=1)
 
-    return df_encoded
+    return df_encoded """
 
-""" def clean_data(df):
-    # Drop nan values
-    if (df.isna().any().any()):
-        df.dropna(inplace = True)
-    # Removes constant predictors  
-    df = df.loc[:, np.std(df, axis=0) != 0]
-    # Removes perfectly correlated predictors 
-    correlation = np.array(df.corr().values) 
-    correlation = np.triu(correlation, k=0)
-    np.fill_diagonal(correlation,0) 
-    df = df.drop(df.columns[np.where(correlation==1)[1]], axis=1)
-    return df """
 
 """ # The transformed data has now mean 0 and standard deviation 1 in every column.
 def standardize(df) :
@@ -78,7 +89,25 @@ def make_submission(df, file_path='submission.csv'):
     submission_df = pd.concat([id,df], axis=1)
     submission_df.columns = ['ID','RT']
     submission_df.to_csv(os.path.abspath(file_path), index=False)
-    print(f'Submission file saved to {file_path}')    
+    print(f'Submission file saved to {file_path}')  
+
+def tune_model(model, data):
+
+    # Create a KFold cross-validator with 20 folds
+    kf = KFold(n_splits=20, shuffle=True, random_state=42)
+
+    # Define the parameter grid for tuning alpha
+    param_grid = {
+        'alpha': np.logspace(-1, 5, num =30)
+    }
+
+    # Create a grid search with cross-validation
+    grid_search = GridSearchCV(estimator=model, param_grid=param_grid, cv=kf, scoring='neg_root_mean_squared_error')
+
+    # Fit the grid search to the data
+    grid_search.fit(data.drop('RT', axis=1), data['RT'] )
+
+    return grid_search  
 
 
 def test_error(y_test, y_pred, plot=False):
