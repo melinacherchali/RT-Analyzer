@@ -3,6 +3,8 @@ import pandas as pd
 from sklearn.preprocessing import OneHotEncoder
 import os 
 from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import mean_squared_error
+import matplotlib.pyplot as plt
 
 
 def read_file(file_path):
@@ -77,3 +79,20 @@ def make_submission(df, file_path='submission.csv'):
     submission_df.columns = ['ID','RT']
     submission_df.to_csv(os.path.abspath(file_path), index=False)
     print(f'Submission file saved to {file_path}')    
+
+
+def test_error(y_test, y_pred, plot=False):
+    # Plot the predictions against actual values
+    if plot:
+        plt.figure()
+        plt.scatter(y_pred,  y_test, label="Predictions vs Actual Values")
+        plt.plot(np.arange(len(y_pred)), np.arange(len(y_test)), c="black", ls="dashed", label="y=x")
+        plt.xlabel("Predictions")
+        plt.ylabel("Actual Values")
+        plt.xlim(0, 30)
+        plt.ylim(0, 30)
+        plt.legend()
+        plt.show() 
+    mse = mean_squared_error(y_test, y_pred)
+    print(f'Test error of {mse}')
+    return mse

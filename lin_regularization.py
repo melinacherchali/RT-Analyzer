@@ -69,27 +69,16 @@ def tune_model(model, data):
 """ --------------------------------------------------- Ridge Model --------------------------------------------------- """
 X = train_data.drop('RT', axis=1)
 
-res1_ridge = tune_model(Ridge(), train_data)
+res1_ridge = tune_model(Ridge(), train_data.iloc[:2800,:])
 print("Best Alpha:", res1_ridge.best_estimator_.alpha, "Best Parameters:", res1_ridge.best_estimator_.coef_, "Best intercept:", res1_ridge.best_estimator_.intercept_)
 
-pred = pd.DataFrame(res1_ridge.best_estimator_.predict(test_data))
-print(pred)
-f.make_submission(pred,"ridge_sub.csv")
+pred = pd.DataFrame(res1_ridge.best_estimator_.predict(X.iloc[2800:,:]))
+
+# f.make_submission(pred,"ridge_sub.csv")
+f.test_error(train_data['RT'].iloc[2800:],pred)
 
 
 """ --------------------------------------------------- Plots --------------------------------------------------- """
-
-
-# Plot the predictions against actual values
-# plt.figure()
-# plt.scatter(pred,  train_data['RT'].iloc[2800:], label="Predictions vs Actual Values")
-# plt.plot(np.arange(len(pred)), np.arange(len(pred)), c="black", ls="dashed", label="y=x")
-# plt.xlabel("Predictions")
-# plt.ylabel("Actual Values")
-# plt.xlim(0, 30)
-# plt.ylim(0, 30)
-# plt.legend()
-# plt.show() 
 
 
 # Plot results
