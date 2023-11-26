@@ -6,8 +6,7 @@ import matplotlib.pyplot as plt
 import function as f 
 
 # Load data
-train_data = f.read_file('train.csv')
-test_data = f.read_file('test.csv')
+train_data, test_data = f.read_file('train.csv','test.csv')
 
 # Drop categorical values
 test_data = test_data.drop(['SMILES', 'mol','Compound'], axis=1)
@@ -16,24 +15,22 @@ train_data = train_data.drop(['SMILES','mol','Compound'], axis=1)
 # Columns to encode
 columns_to_encode = ['Lab']
 
-# OneHotEncoder on train_data
-train_data_encoded = f.apply_one_hot_encoding(train_data, columns_to_encode)
-
-# OneHotEncoder on test_data
-test_data_encoded = f.apply_one_hot_encoding(test_data, columns_to_encode)
-
-# Identify columns to drop from the training data
-columns_to_drop = f.identify_columns_to_drop(train_data_encoded)
+# OneHotEncoder on train_data and test_data
+train_data_encoded, test_data_encoded = f.apply_one_hot_encoding(train_data, test_data, columns_to_encode)
 
 # Clean both train and test data using these columns
-train_data = f.clean_data(train_data_encoded, columns_to_drop)
-test_data = f.clean_data(test_data_encoded, columns_to_drop)
+train_data, test_data = f.clean_data(train_data_encoded, test_data_encoded)
 
 # Separate the features X and the target variable y
 train_subset = int(len(train_data) * 0.8)
 X = train_data.drop(['RT'], axis=1)
-X_subset = X.iloc[:train_subset, :]
-y_subset = train_data['RT'].iloc[train_subset:]
+y = train_data['RT']
+
+# Separate train an test data
+X_train = X.iloc[:train_subset, :]
+X_test = X.iloc[train_subset:, :]
+y_train = y.iloc[:train_subset]
+y_test = y.iloc[train_subset:]
 
 # --------------------------------------------------- Ridge Model with tuning --------------------------------------------------- 
 
@@ -42,13 +39,13 @@ res1_ridge = f.tune_model(Ridge(), train_data.iloc[:train_subset,:])
 print("Best Alpha:", res1_ridge.best_estimator_.alpha, "Best Parameters:", res1_ridge.best_estimator_.coef_, "Best intercept:", res1_ridge.best_estimator_.intercept_)
 
 # Make predictions
-predictions = pd.DataFrame(res1_ridge.best_estimator_.predict(X.iloc[train_subset:,:]))
+predictions = pd.DataFrame(res1_ridge.best_estimator_.predict(X_test))
 
 #Make submission
 f.make_submission(predictions,"ridge_sub_with_L1.csv")
 
 # Test error
-f.test_error(y_subset,predictions)
+f.test_error(y_test,predictions) 
 
 # --------------------------------------------------- Plots --------------------------------------------------- 
 
@@ -68,16 +65,16 @@ plt.show() """
 model = LinearRegression()
 
 # Fit the model to the entire training set 
-model.fit(X_subset, y_subset)
+model.fit(X_train, y_train)
 
 # Make predictions
-predictions = model.predict(X.iloc[train_subset:, :])
+predictions = model.predict(X_test)
 
 # Make submission
 f.make_submission(predictions,"linear_reg.csv")
 
 # Test_error
-f.test_error(y_subset,predictions)
+f.test_error(y_test,predictions)
 """
 
 #--------------------------------------------------- Ridge Regression without tuning ---------------------------------------------------
@@ -91,22 +88,22 @@ param_grid = {'alpha': np.logspace(-5, 7, 100)} # this range finds better alpha
 
 # Perform GridSearchCV for hyperparameter tuning
 grid_search = GridSearchCV(estimator=model, param_grid=param_grid, cv=5, scoring='neg_mean_squared_error')
-grid_search.fit(X_subset, y_subset)
+grid_search.fit(X_train, y_train)
 
 # Get the best model from the grid search
 best_model = grid_search.best_estimator_
 
 # Fit the best model to a subset of the data
-best_model.fit(X_subset, y_subset)
+best_model.fit(X_train, y_train)
 
 # Make predictions 
-predictions = best_model.predict(X.iloc[train_subset:, :])
+predictions = best_model.predict(X_test)
 
 # Make submission
 f.make_submission(predictions,"ridge_sub.csv")
 
 # Test_error
-f.test_error(y_subset,predictions)
+f.test_error(y_test,predictions)
 
  """
 
