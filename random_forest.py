@@ -1,15 +1,10 @@
 
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.linear_model import LinearRegression
-from sklearn.pipeline import Pipeline
-from sklearn.compose import ColumnTransformer
-from sklearn.model_selection import cross_val_score
 from sklearn.metrics import make_scorer
 from sklearn.model_selection import cross_val_score
 from sklearn.metrics import make_scorer
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import GridSearchCV
-
 import numpy as np
 import function as f 
 import pandas as pd
@@ -75,14 +70,21 @@ rf_model = RandomForestRegressor(n_estimators=500)
 
 grid_search = GridSearchCV(estimator=rf_model, param_grid=param_grid, cv=5, scoring='neg_mean_squared_error', n_jobs=-1)
 
-# Train the model on the training set
+# Train the model to submit
 rf_model.fit(X, y)
+
+# To test
 # rf_model.fit(X_train,y_train)
 
 
-# Evaluate the model on the test set
+# Evaluate the model to submit
 y_pred = pd.DataFrame(rf_model.predict(test_data))
 
+# Evaluate the model on the test set
 # y_pred = pd.DataFrame(rf_model.predict(X_test))
+
+# Test error
 # f.test_error(y_test, y_pred, True)
+
+# Make submission
 f.make_submission(y_pred, "random_forest_sub.csv")
