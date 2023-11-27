@@ -9,14 +9,6 @@ import numpy as np
 import function as f 
 import pandas as pd
 
-
-def summarize(cross_val_score:np.ndarray):
-    return {
-        "avg_rmse" : cross_val_score.mean(),
-        "rmse_per_fold": cross_val_score
-    }
-
-
 # Load data
 train_data = f.read_file('train.csv')
 test_data = f.read_file('test.csv')
