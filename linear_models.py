@@ -32,6 +32,17 @@ X_test = X.iloc[train_subset:, :]
 y_train = y.iloc[:train_subset]
 y_test = y.iloc[train_subset:]
 
+""" # Apply PCA
+variance_ratio = 0.989
+X, test_data = f.apply_PCA(X, test_data, variance_ratio)
+
+X_train = X.iloc[:train_subset, :]
+X_test = X.iloc[train_subset:, :]
+y_train = y.iloc[:train_subset]
+y_test = y.iloc[train_subset:]
+
+X_subset = pd.concat([X_train,y_train], axis=1).iloc[:train_subset,:]  """
+
 # --------------------------------------------------- Ridge Model with tuning --------------------------------------------------- 
 
 # Tune the Ridge Regressor model 

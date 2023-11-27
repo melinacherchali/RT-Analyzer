@@ -41,7 +41,7 @@ y_train = y.iloc[:train_subset]
 y_test = y.iloc[train_subset:]
 """
 
-# --------------------------------------------------- Ridge Model with tuning --------------------------------------------------- 
+# --------------------------------------------------- Random Forest --------------------------------------------------- 
 
 param_grid = {
     'n_estimators': [100, 200, 300],
@@ -70,9 +70,6 @@ y_pred = pd.DataFrame(rf_model.predict(X_test))
 
 # Test error 
 f.test_error(y_test, y_pred, True)
-
-# Train error 
-f.train_error(y_train, y_pred)
 
 # Make submission
 #f.make_submission(y_pred, "random_forest_sub.csv")
