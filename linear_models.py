@@ -23,29 +23,55 @@ train_data, test_data = f.clean_data(train_data_encoded, test_data_encoded)
 
 # Separate the features X and the target variable y
 train_subset = int(len(train_data) * 0.8)
-X = train_data.drop(['RT'], axis=1)
-y = train_data['RT']
+X,y = train_data.drop(['RT'], axis=1), train_data['RT']
 
 # Separate train an test data
+# X_train = X.iloc[:train_subset, :]
+# X_test = X.iloc[train_subset:, :]
+# y_train = y.iloc[:train_subset]
+# y_test = y.iloc[train_subset:]
+X_train, X_test, y_train, y_test = f.split_data(train_data)
+
+""" # Apply PCA
+variance_ratio = 0.989
+X, test_data = f.apply_PCA(X, test_data, variance_ratio)
+
 X_train = X.iloc[:train_subset, :]
 X_test = X.iloc[train_subset:, :]
 y_train = y.iloc[:train_subset]
 y_test = y.iloc[train_subset:]
 
+X_subset = pd.concat([X_train,y_train], axis=1).iloc[:train_subset,:]  """
+
 # --------------------------------------------------- Ridge Model with tuning --------------------------------------------------- 
 
+# Define the parameter grid for tuning alpha
+param_grid = {
+    'alpha': np.logspace(-1, 5, num =30)
+}
+
+# Model testing parameters 
+submit = False
+file_path = 'ridge_sub_with_L1.csv'
+plot = True
+
 # Tune the Ridge Regressor model 
-res1_ridge = f.tune_model(Ridge(), train_data.iloc[:train_subset,:])
+res1_ridge = f.tune_model(Ridge(), train_data, param_grid, submit)
 print("Best Alpha:", res1_ridge.best_estimator_.alpha, "Best Parameters:", res1_ridge.best_estimator_.coef_, "Best intercept:", res1_ridge.best_estimator_.intercept_)
 
-# Make predictions
-predictions = pd.DataFrame(res1_ridge.best_estimator_.predict(X_test))
+# # Make predictions
+# predictions = pd.DataFrame(res1_ridge.best_estimator_.predict(X_test))
 
-#Make submission
-f.make_submission(predictions,"ridge_sub_with_L1.csv")
+# #Make submission
+# f.make_submission(predictions,"ridge_sub_with_L1.csv")
 
-# Test error
-f.test_error(y_test,predictions) 
+# # Test error
+# f.test_error(y_test,predictions) 
+
+
+
+
+f.model_test(train_data,test_data,res1_ridge.best_estimator_,submit,file_path,plot)
 
 # --------------------------------------------------- Plots --------------------------------------------------- 
 
