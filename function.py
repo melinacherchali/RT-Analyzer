@@ -179,18 +179,15 @@ def tune_model(model, data, param_grid, submit=False):
     if not submit:
         train_subset = int(len(data) * 0.8)
         data = data.iloc[:train_subset,:]
-    print ("1")
+        
     # Create a KFold cross-validator with 5 folds
     kf = KFold(n_splits=5, shuffle=True, random_state=42)
-    print ("2")
 
     # Create a grid search with cross-validation
     grid_search = GridSearchCV(estimator=model, param_grid=param_grid, cv=kf, scoring='neg_root_mean_squared_error')
-    print ("3")
 
     # Fit the grid search to the data
     grid_search.fit(data.drop('RT', axis=1), data['RT'] )
-    print ("4")
 
     return grid_search  
 

@@ -26,10 +26,6 @@ train_subset = int(len(train_data) * 0.8)
 X,y = train_data.drop(['RT'], axis=1), train_data['RT']
 
 # Separate train an test data
-# X_train = X.iloc[:train_subset, :]
-# X_test = X.iloc[train_subset:, :]
-# y_train = y.iloc[:train_subset]
-# y_test = y.iloc[train_subset:]
 X_train, X_test, y_train, y_test = f.split_data(train_data)
 
 """ # Apply PCA

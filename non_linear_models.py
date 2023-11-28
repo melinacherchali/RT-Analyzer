@@ -1,6 +1,10 @@
 from sklearn.ensemble import RandomForestRegressor
+from xgboost import XGBRegressor
 from sklearn.model_selection import GridSearchCV 
+from sklearn.model_selection import cross_val_score
+from sklearn.metrics import make_scorer
 import pandas as pd
+import numpy as np
 import function as f 
 
 # Load data
@@ -76,3 +80,26 @@ f.model_test(train_data,test_data,rf_model,submit,file_path,plot)
 
 # Make submission
 #f.make_submission(y_pred, "random_forest_sub.csv")
+
+# --------------------------------------------------- Gradient boosting ---------------------------------------------------
+
+param_grid = {
+    'colsample_bytree': np.linspace(0.5, 1, 5),
+    'subsample': np.linspace(0.5, 1, 5),
+    'max_depth': np.arange(2, 7, 1)
+}
+
+# Model testing parameters
+submit = False
+file_path = 'GB_sub.csv'
+plot = True
+
+# Tune with Gradient boosting model
+model_GB = f.tune_model(XGBRegressor(), train_data, param_grid, submit)
+
+f.model_test(train_data,test_data,model_GB.best_estimator_,submit,file_path,plot)
+#grid_search = GridSearchCV(model_GB, param_grid, cv=4, scoring=make_scorer(f.rmse), n_jobs=-1)
+
+f.summarize(cross_val_score(model_GB, X, y, cv=6, scoring=make_scorer(f.rmse)))
+#f.make_submission(y_pred, "random_forest_sub.csv")
+
