@@ -48,32 +48,20 @@ param_grid = {
 
 # Model testing parameters 
 submit = False
-file_path = 'ridge_sub_with_L1.csv'
+file_path = 'ridge_sub.csv'
 plot = True
 
 # Tune the Ridge Regressor model 
-res1_ridge = f.tune_model(Ridge(), train_data, param_grid, submit)
-print("Best Alpha:", res1_ridge.best_estimator_.alpha, "Best Parameters:", res1_ridge.best_estimator_.coef_, "Best intercept:", res1_ridge.best_estimator_.intercept_)
+ridge_model = f.tune_model(Ridge(), train_data, param_grid, submit)
 
-# # Make predictions
-# predictions = pd.DataFrame(res1_ridge.best_estimator_.predict(X_test))
-
-# #Make submission
-# f.make_submission(predictions,"ridge_sub_with_L1.csv")
-
-# # Test error
-# f.test_error(y_test,predictions) 
-
-
-
-
-f.model_test(train_data,test_data,res1_ridge.best_estimator_,submit,file_path,plot)
+# Test the model
+f.model_test(train_data,test_data,ridge_model.best_estimator_,submit,file_path,plot)
 
 # --------------------------------------------------- Plots --------------------------------------------------- 
 
 """ # Plot results
 plt.figure()
-plt.plot(np.logspace(-5, 7, num =30), -res1_ridge.cv_results_['mean_test_score'])
+plt.plot(np.logspace(-5, 7, num =30), -ridge_model.cv_results_['mean_test_score'])
 plt.xscale('log')
 plt.xlabel('Alpha')
 plt.ylabel('RMSE')
@@ -83,65 +71,49 @@ plt.show() """
 # --------------------------------------------------- Linear Regression not working --------------------------------------------------- 
 
 """
-# Define model
-model = LinearRegression()
+# Model testing parameters 
+submit = False
+file_path = 'linear_sub.csv'
+plot = True
 
-# Fit the model to the entire training set 
-model.fit(X_train, y_train)
 
-# Make predictions
-predictions = model.predict(X_test)
-
-# Make submission
-f.make_submission(predictions,"linear_reg.csv")
-
-# Test_error
-f.test_error(y_test,predictions)
+# Test the model
+f.model_test(train_data,test_data,LinearRegression(),submit,file_path,plot)
 """
 
 #--------------------------------------------------- Ridge Regression without tuning ---------------------------------------------------
 
 """
-# Define the RidgeRegressor model
-model = Ridge()
+# Model testing parameters 
+submit = False
+file_path = 'ridge_sub.csv'
+plot = True
 
-# Define the parameter grid for hyperparameter tuning
-param_grid = {'alpha': np.logspace(-5, 7, 100)} # this range finds better alpha
-
-# Perform GridSearchCV for hyperparameter tuning
-grid_search = GridSearchCV(estimator=model, param_grid=param_grid, cv=5, scoring='neg_mean_squared_error')
-grid_search.fit(X_train, y_train)
-
-# Get the best model from the grid search
-best_model = grid_search.best_estimator_
-
-# Fit the best model to a subset of the data
-best_model.fit(X_train, y_train)
-
-# Make predictions 
-predictions = best_model.predict(X_test)
-
-# Make submission
-f.make_submission(predictions,"ridge_sub.csv")
-
-# Test_error
-f.test_error(y_test,predictions)
+# Test the model
+f.model_test(train_data,test_data, Ridge(),submit,file_path,plot)
 
  """
 
 # --------------------------------------------------- Lasso not working --------------------------------------------------- 
 
-""" # Tune the Lasso Regressor model 
-res1_lasso = f.tune_model(Lasso(max_iter = 10000), train_data)
-print("Best Alpha:", res1_lasso.best_estimator_.alpha, "Best Parameters:", res1_lasso.best_estimator_.coef_, "Best intercept:", res1_lasso.best_estimator_.intercept_)
+""" # Define the parameter grid for tuning alpha
+param_grid = {
+    'alpha': np.logspace(-1, 5, num =30)
+}
+
+# Tune the Lasso Regressor model 
+lasso_model = f.tune_model(Lasso(max_iter = 10000), train_data, param_grid, submit)
+
+# Test the model
+f.model_test(train_data,test_data, lasso_model.best_estimator_ ,submit,file_path,plot)
 
 # Plot results
 plt.figure()
-plt.plot(np.logspace(-5, 7, num =30), -res1_lasso.cv_results_['mean_test_score'])
+plt.plot(np.logspace(-5, 7, num =30), -lasso_model.cv_results_['mean_test_score'])
 plt.xscale('log')
 plt.xlabel('Alpha')
 plt.ylabel('RMSE')
 plt.title('Lasso Hyperparameter Tuning')
-plt.show() """
+plt.show()  """
 
 

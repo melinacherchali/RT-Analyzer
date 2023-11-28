@@ -1,6 +1,5 @@
 from sklearn.ensemble import RandomForestRegressor
 from xgboost import XGBRegressor
-from sklearn.model_selection import GridSearchCV 
 from sklearn.model_selection import cross_val_score
 from sklearn.metrics import make_scorer
 import pandas as pd
@@ -37,10 +36,27 @@ X_test = X.iloc[train_subset:, :]
 y_train = y.iloc[:train_subset]
 y_test = y.iloc[train_subset:]
 """
+# --------------------------------------------------- Gradient boosting ---------------------------------------------------
+
+param_grid = {
+    'colsample_bytree': np.linspace(0.5, 1, 5),
+    'subsample': np.linspace(0.5, 1, 5),
+    'max_depth': np.arange(2, 7, 1)
+}
+
+# Model testing parameters
+submit = True
+file_path = 'GB_sub.csv'
+plot = True
+
+# Tune with Gradient boosting model
+#model_GB = f.tune_model(XGBRegressor(), train_data, param_grid, submit)
+model_GB = XGBRegressor()
+f.model_test(train_data,test_data,model_GB,submit,file_path,plot)
 
 # --------------------------------------------------- Random Forest --------------------------------------------------- 
 
-# Define the parameter grid
+""" # Define the parameter grid
 param_grid = {
     'n_estimators': [100, 200, 300],
     'max_features': ['sqrt', 'log2', .5],
@@ -59,47 +75,10 @@ plot = True
 # rf_model = f.tune_model(RandomForestRegressor(), train_data, param_grid, submit)
 
 rf_model = RandomForestRegressor(n_estimators=500)
-grid_search = GridSearchCV(estimator=rf_model, param_grid=param_grid, cv=5, scoring='neg_mean_squared_error', n_jobs=-1)
 f.model_test(train_data,test_data,rf_model,submit,file_path,plot)
 
+ """
 
-# Train the model to submit (on test set)
-#rf_model.fit(X, y)
 
-# Train the model 
-# rf_model.fit(X_train,y_train)
 
-# Evaluate the model to submit (on test_data)
-#y_pred = pd.DataFrame(rf_model.predict(test_data))
-
-# Evaluate the model (on X_test)
-# y_pred = pd.DataFrame(rf_model.predict(X_test))
-
-# Test error 
-# f.test_error(y_test, y_pred, True)
-
-# Make submission
-#f.make_submission(y_pred, "random_forest_sub.csv")
-
-# --------------------------------------------------- Gradient boosting ---------------------------------------------------
-
-param_grid = {
-    'colsample_bytree': np.linspace(0.5, 1, 5),
-    'subsample': np.linspace(0.5, 1, 5),
-    'max_depth': np.arange(2, 7, 1)
-}
-
-# Model testing parameters
-submit = False
-file_path = 'GB_sub.csv'
-plot = True
-
-# Tune with Gradient boosting model
-model_GB = f.tune_model(XGBRegressor(), train_data, param_grid, submit)
-
-f.model_test(train_data,test_data,model_GB.best_estimator_,submit,file_path,plot)
-#grid_search = GridSearchCV(model_GB, param_grid, cv=4, scoring=make_scorer(f.rmse), n_jobs=-1)
-
-f.summarize(cross_val_score(model_GB, X, y, cv=6, scoring=make_scorer(f.rmse)))
-#f.make_submission(y_pred, "random_forest_sub.csv")
 
