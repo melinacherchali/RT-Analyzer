@@ -101,3 +101,5 @@ f.model_test(train_data,test_data,model_GB.best_estimator_,submit,file_path,plot
 #grid_search = GridSearchCV(model_GB, param_grid, cv=4, scoring=make_scorer(f.rmse), n_jobs=-1)
 
 f.summarize(cross_val_score(model_GB, X, y, cv=6, scoring=make_scorer(f.rmse)))
+#f.make_submission(y_pred, "random_forest_sub.csv")
+
