@@ -1,5 +1,6 @@
 from sklearn.ensemble import RandomForestRegressor
 from xgboost import XGBRegressor
+from sklearn.svm import NuSVR
 from sklearn.model_selection import cross_val_score
 from sklearn.metrics import make_scorer
 import pandas as pd
@@ -79,6 +80,13 @@ f.model_test(train_data,test_data,rf_model,submit,file_path,plot)
 
  """
 
+# --------------------------------------------------- SVM ---------------------------------------------------
+""" 
+# Usually best for classification problems 
+model_SVM = NuSVR()
 
-
-
+# Model testing parameters
+submit = False
+file_path = 'SVM_sub.csv'
+plot = True
+f.model_test(train_data,test_data,model_SVM,submit,file_path,plot) """
