@@ -7,6 +7,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import KFold, GridSearchCV
 from sklearn.metrics import mean_squared_error
 import matplotlib.pyplot as plt
+import torch
 
 
 def read_file(file_path_train, file_path_test):
@@ -40,7 +41,9 @@ def identify_columns_to_drop(df):
         df = df.dropna(inplace = True)
 
     # Identifies constant predictors
-    constant_columns = df.columns[df.std(axis=0, numeric_only=True) == 0]
+    thr = 0.05
+    constant_columns = df.columns[df.std(axis=0, numeric_only=True) <= thr]
+    # constant_columns = df.columns[df.std(axis=0, numeric_only=True) == 0]
 
     # Identifies perfectly correlated predictors
     correlation = np.array(df.corr().values)
@@ -309,7 +312,7 @@ def model_test(train_data, test_data, model, submit=False, file_path='submission
     # Split data 
     X,y = train_data.drop([target_column], axis=1), train_data[target_column]
     X_train, X_test, y_train, y_test = split_data(train_data, target_column)
-
+    
     if submit:
         model.fit(X,y) # train model on all training data
         y_pred = pd.DataFrame(model.predict(test_data)) # predict using test data
@@ -320,3 +323,4 @@ def model_test(train_data, test_data, model, submit=False, file_path='submission
         test_error(y_test,y_pred,plot) # test the error on the test subset
         
     return y_pred
+
