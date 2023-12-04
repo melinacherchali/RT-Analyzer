@@ -7,7 +7,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import KFold, GridSearchCV
 from sklearn.metrics import mean_squared_error
 import matplotlib.pyplot as plt
-import torch
+from sklearn.ensemble import IsolationForest
 
 
 def read_file(file_path_train, file_path_test):
@@ -54,6 +54,22 @@ def identify_columns_to_drop(df):
     columns_to_drop = np.union1d(constant_columns, correlated_columns)
     return columns_to_drop
 
+def identify_outliers(column):
+    """
+    Identify outliers using the Isolation Forest method.
+
+    Parameters:
+    - column: The column containing the values for outlier detection.
+
+    Returns:
+    - outlier_rows: Index of rows identified as outliers.
+    """
+    iso_forest = IsolationForest(contamination=0.05)  # Adjust the contamination parameter
+    outliers = iso_forest.fit_predict(column.values.reshape(-1, 1))
+    outlier_rows = column.index[outliers == -1]
+    
+    return outlier_rows
+
 def clean_data(train_data, test_data):
     """
     Clean train and test data by dropping identified columns.
@@ -67,8 +83,15 @@ def clean_data(train_data, test_data):
     - test_data_clean: DataFrame containing the clean test data.
     """
     columns_to_drop = identify_columns_to_drop(train_data)
+    outlier_rows = identify_outliers(train_data['RT'])
+    
+    # Drop columns
     train_data_clean = train_data.drop(columns=columns_to_drop, axis=1)
     test_data_clean = test_data.drop(columns=columns_to_drop, axis=1)
+    
+    # Drop rows with outliers
+    # train_data_clean = train_data_clean.drop(index=outlier_rows)
+    
     return train_data_clean, test_data_clean 
 
 def apply_one_hot_encoding(train_data, test_data, column_names):
@@ -111,6 +134,7 @@ def apply_one_hot_encoding(train_data, test_data, column_names):
     test_encoded = pd.concat([test_data.drop(column_names, axis=1), all_encoded_test], axis=1)
 
     return train_encoded, test_encoded
+
 
 
 # Not used here as we chose to use the training data with binary values
@@ -312,6 +336,7 @@ def model_test(train_data, test_data, model, submit=False, file_path='submission
     # Split data 
     X,y = train_data.drop([target_column], axis=1), train_data[target_column]
     X_train, X_test, y_train, y_test = split_data(train_data, target_column)
+    y_train = np.sqrt(y_train)
     
     if submit:
         model.fit(X,y) # train model on all training data
@@ -320,7 +345,31 @@ def model_test(train_data, test_data, model, submit=False, file_path='submission
     else:
         model.fit(X_train,y_train) # train model on training subset
         y_pred = pd.DataFrame(model.predict(X_test)) # predict using test subset
+        y_pred = y_pred**2
         test_error(y_test,y_pred,plot) # test the error on the test subset
         
     return y_pred
+
+def process_data(train_data, test_data):
+    """
+    Process and clean training and test data.
+
+    Parameters:
+    - train_data (pd.DataFrame): DataFrame containing training data.
+    - test_data (pd.DataFrame): DataFrame containing test data.
+    """
+    # Drop categorical values
+    test_data = test_data.drop(['SMILES', 'mol','Compound'], axis=1)
+    train_data = train_data.drop(['SMILES','mol','Compound'], axis=1)
+
+    # Columns to encode
+    columns_to_encode = ['Lab']
+
+    # OneHotEncoder on train_data and test_data
+    train_data, test_data = apply_one_hot_encoding(train_data, test_data, columns_to_encode)
+
+    # Clean both train and test data using these columns
+    train_data, test_data = clean_data(train_data, test_data)
+    
+    return train_data, test_data
 

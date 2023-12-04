@@ -11,32 +11,23 @@ import function as f
 # Load data
 train_data, test_data = f.read_file('train.csv','test.csv')
 
-# Drop categorical values
-test_data = test_data.drop(['SMILES', 'mol','Compound'], axis=1)
-train_data = train_data.drop(['SMILES','mol','Compound'], axis=1)
-
-# Columns to encode
-columns_to_encode = ['Lab']
-
-# OneHotEncoder on train_data and test_data
-train_data_encoded, test_data_encoded = f.apply_one_hot_encoding(train_data, test_data, columns_to_encode)
-
-# Clean both train and test data using these columns
-train_data, test_data = f.clean_data(train_data_encoded, test_data_encoded)
-train_subset = int(len(train_data) * 0.8)
+# Process and clean data
+train_data, test_data = f.process_data(train_data,test_data)
 
 # Separate train and test data
+train_subset = int(len(train_data) * 0.8)
+
 X, y = train_data.drop('RT', axis=1), train_data['RT']
 X_train, X_test, y_train, y_test = f.split_data(train_data)
 
 # Apply PCA
-# variance_ratio = 0.989
-# X, test_data = f.apply_PCA(X, test_data, variance_ratio)
+variance_ratio = 0.989
+X, test_data = f.apply_PCA(X, test_data, variance_ratio)
 
-# X_train = X.iloc[:train_subset, :]
-# X_test = X.iloc[train_subset:, :]
-# y_train = y.iloc[:train_subset]
-# y_test = y.iloc[train_subset:]
+X_train = X.iloc[:train_subset, :]
+X_test = X.iloc[train_subset:, :]
+y_train = y.iloc[:train_subset]
+y_test = y.iloc[train_subset:]
 
 # --------------------------------------------------- Gradient boosting ---------------------------------------------------
 
@@ -65,9 +56,10 @@ if submit:
 else :
     X = train_data
 
-random_search.fit(X.drop('RT', axis=1), X['RT'] )
+random_search.fit(X.drop('RT', axis=1), np.sqrt(X['RT']))
 f.model_test(train_data,test_data,random_search.best_estimator_,submit,file_path,plot)
 print("Best Parameters:", random_search.best_params_)
+
 
 # --------------------------------------------------- Random Forest --------------------------------------------------- 
 
