@@ -8,7 +8,10 @@ from sklearn.model_selection import KFold, GridSearchCV
 from sklearn.metrics import mean_squared_error
 import matplotlib.pyplot as plt
 from sklearn.ensemble import IsolationForest
-
+from scipy.stats import zscore
+from rdkit import Chem
+from rdkit.Chem import Descriptors, AllChem, rdFMCS, ChemicalFeatures
+from rdkit import RDConfig
 
 def read_file(file_path_train, file_path_test):
     """
@@ -41,7 +44,7 @@ def identify_columns_to_drop(df):
         df = df.dropna(inplace = True)
 
     # Identifies constant predictors
-    thr = 0.05
+    thr = 0
     constant_columns = df.columns[df.std(axis=0, numeric_only=True) <= thr]
     # constant_columns = df.columns[df.std(axis=0, numeric_only=True) == 0]
 
@@ -64,10 +67,12 @@ def identify_outliers(column):
     Returns:
     - outlier_rows: Index of rows identified as outliers.
     """
-    iso_forest = IsolationForest(contamination=0.05)  # Adjust the contamination parameter
-    outliers = iso_forest.fit_predict(column.values.reshape(-1, 1))
-    outlier_rows = column.index[outliers == -1]
-    
+    # iso_forest = IsolationForest(contamination=0.05)  # Adjust the contamination parameter
+    # outliers = iso_forest.fit_predict(column.values.reshape(-1, 1))
+    # outlier_rows = column.index[outliers == -1]
+    z_scores = zscore(column)
+    outliers_z = (np.abs(z_scores) > 3)
+    outlier_rows = column.index[outliers_z]
     return outlier_rows
 
 def clean_data(train_data, test_data):
@@ -336,19 +341,51 @@ def model_test(train_data, test_data, model, submit=False, file_path='submission
     # Split data 
     X,y = train_data.drop([target_column], axis=1), train_data[target_column]
     X_train, X_test, y_train, y_test = split_data(train_data, target_column)
-    #y_train = np.sqrt(y_train)
+    # y_train = np.sqrt(y_train)
+    # y = np.sqrt(y)
     
     if submit:
         model.fit(X,y) # train model on all training data
         y_pred = pd.DataFrame(model.predict(test_data)) # predict using test data
+        # y_pred = y_pred**2
         make_submission(y_pred, file_path)
     else:
         model.fit(X_train,y_train) # train model on training subset
         y_pred = pd.DataFrame(model.predict(X_test)) # predict using test subset
-        #y_pred = y_pred**2
+        # y_pred = y_pred**2
         test_error(y_test,y_pred,plot) # test the error on the test subset
         
     return y_pred
+
+def analyze_smiles_column(dataframe1, smiles_column):
+    dataframe = dataframe1.copy()
+    dataframe['Molecule'] = dataframe[smiles_column].apply(Chem.MolFromSmiles)
+
+    # Basic information about the molecules
+    dataframe['Num_Atoms'] = dataframe['Molecule'].apply(Descriptors.HeavyAtomCount)
+    dataframe['Num_Bonds'] = dataframe['Molecule'].apply(Descriptors.NumRotatableBonds)
+    dataframe['Num_Rings'] = dataframe['Molecule'].apply(Descriptors.RingCount)
+    dataframe['MolWeight'] = dataframe['Molecule'].apply(Descriptors.MolWt)
+    dataframe['LogP'] = dataframe['Molecule'].apply(Descriptors.MolLogP)
+    dataframe['TPSA'] = dataframe['Molecule'].apply(Descriptors.TPSA)
+
+    # Additional molecular descriptors
+    dataframe['Num_HydrogenAcceptors'] = dataframe['Molecule'].apply(Descriptors.NumHAcceptors)
+    dataframe['Num_HydrogenDonors'] = dataframe['Molecule'].apply(Descriptors.NumHDonors)
+    dataframe['Num_AromaticRings'] = dataframe['Molecule'].apply(Descriptors.NumAromaticRings)
+    dataframe['Num_SaturatedRings'] = dataframe['Molecule'].apply(Descriptors.NumSaturatedRings)
+    dataframe['Num_AliphaticRings'] = dataframe['Molecule'].apply(Descriptors.NumAliphaticRings)
+    dataframe['Num_AliphaticCarbocycles'] = dataframe['Molecule'].apply(Descriptors.NumAliphaticCarbocycles)
+
+    # Molecular fingerprints
+    dataframe['FunctionalGroups'] = dataframe['Molecule'].apply(lambda x: len(ChemicalFeatures.BuildFeatureFactory(
+        os.path.join(RDConfig.RDDataDir, 'BaseFeatures.fdef')).GetFeaturesForMol(x)))
+    dataframe['Fingerprint'] = dataframe['Molecule'].apply(lambda x: AllChem.GetMorganFingerprintAsBitVect(x, 2))
+
+    return dataframe[['Num_Atoms', 'Num_Bonds', 'Num_Rings', 'MolWeight', 'TPSA',
+                       'Num_HydrogenAcceptors', 'Num_HydrogenDonors', 'Num_AromaticRings',
+                       'Num_SaturatedRings', 'Num_AliphaticRings', 'Num_AliphaticCarbocycles',
+                       'FunctionalGroups']]
 
 def process_data(train_data, test_data):
     """
@@ -358,9 +395,26 @@ def process_data(train_data, test_data):
     - train_data (pd.DataFrame): DataFrame containing training data.
     - test_data (pd.DataFrame): DataFrame containing test data.
     """
+    # # Drop categorical values
+    # test_data = test_data.drop(['SMILES', 'mol','Compound'], axis=1)
+    # train_data = train_data.drop(['SMILES','mol','Compound'], axis=1)
+
+    # # Columns to encode
+    # columns_to_encode = ['Lab']
+
+    # # OneHotEncoder on train_data and test_data
+    # train_data, test_data = apply_one_hot_encoding(train_data, test_data, columns_to_encode)
+
+    # # Clean both train and test data using these columns
+    # train_data, test_data = clean_data(train_data, test_data)
+    
+    
+    smiles_train, smiles_test  = analyze_smiles_column(train_data, 'SMILES'), analyze_smiles_column(test_data, 'SMILES')
+    smiles_train, smiles_test  = standardize(smiles_train), standardize(smiles_test)
+
     # Drop categorical values
     test_data = test_data.drop(['SMILES', 'mol','Compound'], axis=1)
-    train_data = train_data.drop(['SMILES','mol','Compound'], axis=1)
+    train_data = train_data.drop(['SMILES', 'mol','Compound'], axis=1)
 
     # Columns to encode
     columns_to_encode = ['Lab']
@@ -368,7 +422,9 @@ def process_data(train_data, test_data):
     # OneHotEncoder on train_data and test_data
     train_data, test_data = apply_one_hot_encoding(train_data, test_data, columns_to_encode)
 
-    # Clean both train and test data using these columns
+    train_data, test_data  = pd.concat([train_data, smiles_train], axis=1), pd.concat([test_data, smiles_test], axis=1)
+
+    # Display the resulting DataFrame
     train_data, test_data = clean_data(train_data, test_data)
     
     return train_data, test_data
