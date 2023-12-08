@@ -6,11 +6,13 @@ import torch.optim as optim
 from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import mean_squared_error
 import numpy as np
-from skorch import NeuralNetRegressor #sklearn + pytorch
+from skorch import NeuralNetRegressor
 from sklearn.model_selection import RandomizedSearchCV
 import skorch 
 
-
+submit = False
+path = 'NN_sub.csv'
+plot = True
 
 # Load data
 train_data, test_data = f.read_file('train.csv','test.csv')
@@ -23,19 +25,12 @@ train_subset = int(len(train_data) * 0.8)
 X, y = train_data.drop('RT', axis=1), train_data['RT']
 X_train, X_test, y_train, y_test = f.split_data(train_data)
 
-# Apply PCA
-variance_ratio = 0.989
-X, test_data = f.apply_PCA(X, test_data, variance_ratio)
+if not submit :
+    X = X_train
+    y = y_train
 
-X_train = X.iloc[:train_subset, :]
-X_test = X.iloc[train_subset:, :]
-y_train = y.iloc[:train_subset]
-y_test = y.iloc[train_subset:]
-
-
-X_tensor = torch.tensor(X.iloc[:train_subset, :].values, dtype=torch.float32)
-y_tensor = torch.tensor(y.iloc[:train_subset].values, dtype=torch.float32).reshape(-1, 1)
-
+X_tensor = torch.tensor(X.values, dtype=torch.float32)
+y_tensor = torch.tensor(y.values, dtype=torch.float32).reshape(-1, 1)
 
 # Define the neural network model using PyTorch
 class NN_model(nn.Module):
@@ -56,39 +51,20 @@ model_skorch = NeuralNetRegressor(
     NN_model,
     criterion=nn.MSELoss,
     optimizer=optim.Adam,
-    max_epochs=1000,
+    max_epochs=500,
     batch_size=32,
-    lr=0.001,  # Experiment with different learning rates
-    module__dropout_rate=0.1,  # Experiment with different dropout rates
-    optimizer__weight_decay=1e-3,  # L2 regularization
-    callbacks=[('early_stopping', skorch.callbacks.EarlyStopping(patience=25))]  # Early stopping
+    lr=0.001, 
+    module__dropout_rate=0.1,  
+    optimizer__weight_decay=1e-3,  
+    callbacks=[('early_stopping', skorch.callbacks.EarlyStopping(patience=25))]  
 )
 
-# Define the parameter grid for hyperparameter tuning
-param_grid = {
-    'module__n_neurons': [180, 190, 200, 210, 220],  # Adjusted around the best value
-    'module__dropout_rate': [0.1, 0.2, 0.3]  # Adjusted around the best value
-}
+# Make predictions using the best model
+model_skorch.fit(X_tensor, y_tensor)
 
-# Perform GridSearchCV for hyperparameter tuning
-# random_search = RandomizedSearchCV(estimator=model_skorch, param_distributions=param_grid, n_iter=10, scoring='neg_mean_squared_error', cv=5, verbose=1, n_jobs=-1)
-# random_result = random_search.fit(X_tensor, np.sqrt(y_tensor))
-
-# print("Best MSE: %f using %s" % (random_result.best_score_, random_result.best_params_))
-
-
-# Get the best model from the grid search
-# mach2 = random_result.best_estimator_
-
-# Fit the best model to the data
-model_skorch.fit(X_tensor, np.sqrt(y_tensor))
-
-# Make predictions
-predictions = model_skorch.predict(torch.tensor(X.iloc[train_subset:, :].values, dtype=torch.float32))
-y_pred = pd.DataFrame(predictions)
-print(y_pred**2)
-print(np.sqrt(mean_squared_error(y.iloc[train_subset:], y_pred**2)))
-
-# print("Best Parameters:", random_search.best_params_)
-
-# mach2.get_params()
+if submit:
+    y_pred = pd.DataFrame(model_skorch.predict(torch.tensor(test_data.values,dtype=torch.float32))) # predict using test data
+    f.make_submission(y_pred, path)
+else:
+    y_pred = pd.DataFrame(model_skorch.predict(torch.tensor(X_test.values,dtype=torch.float32))) # predict using test subset
+    f.test_error(y_test,y_pred,plot) # test the error on the test subset

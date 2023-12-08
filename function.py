@@ -336,7 +336,7 @@ def model_test(train_data, test_data, model, submit=False, file_path='submission
     # Split data 
     X,y = train_data.drop([target_column], axis=1), train_data[target_column]
     X_train, X_test, y_train, y_test = split_data(train_data, target_column)
-    y_train = np.sqrt(y_train)
+    #y_train = np.sqrt(y_train)
     
     if submit:
         model.fit(X,y) # train model on all training data
@@ -345,7 +345,7 @@ def model_test(train_data, test_data, model, submit=False, file_path='submission
     else:
         model.fit(X_train,y_train) # train model on training subset
         y_pred = pd.DataFrame(model.predict(X_test)) # predict using test subset
-        y_pred = y_pred**2
+        #y_pred = y_pred**2
         test_error(y_test,y_pred,plot) # test the error on the test subset
         
     return y_pred
