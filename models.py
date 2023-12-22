@@ -123,7 +123,6 @@ def keras_nn(X,
         model_twoBranch.fit(x=[X_train, X_train], y=y_train, validation_split=0.1, batch_size=16, epochs=100, callbacks=[early_stop])
         test_y_pred = pd.DataFrame(model_twoBranch.predict([X_test, X_test]))
         f.test_error(y_test,test_y_pred,plot)
-        # f.make_submission(test_y_pred, path)
 
 
 
@@ -155,23 +154,19 @@ def pytorch_nn(X,
     else:
         X_tensor = torch.tensor(X_train.values, dtype=torch.float32)
         y_tensor = torch.tensor(y_train.values, dtype=torch.float32).reshape(-1, 1)
-        X_test_tensor = torch.tensor(X_test.values, dtype=torch.float32)
 
     # Define the neural network model using PyTorch
     class NN_model(nn.Module):
-        def __init__(self, input_size=X.shape[1], dropout_rate=0.2):
+        def __init__(self, input_size=X.shape[1], n_neurons=220, dropout_rate=0.2):
             super().__init__()
             self.layers = nn.Sequential(
-                nn.Linear(input_size, 750),
+                nn.Linear(input_size, n_neurons),
                 nn.ReLU(),
                 nn.Dropout(p=dropout_rate),
-                nn.Linear(750, 500),
+                nn.Linear(n_neurons, n_neurons),
                 nn.ReLU(),
                 nn.Dropout(p=dropout_rate),
-                nn.Linear(500, 250),
-                nn.ReLU(),
-                nn.Dropout(p=dropout_rate),
-                nn.Linear(250, 1)
+                nn.Linear(n_neurons, 1)
             )
 
         def forward(self, x):
@@ -181,26 +176,26 @@ def pytorch_nn(X,
     model_skorch = NeuralNetRegressor(
         NN_model,
         criterion=nn.MSELoss,
-        optimizer=optim.Adam,
-        max_epochs=256,
+        optimizer= optim.RMSprop,
+        max_epochs=900,
         batch_size=3,
-        lr=1e-4,  
-        optimizer__weight_decay=1e-3,  
-        callbacks=[('early_stopping', skorch.callbacks.EarlyStopping(patience=45))]  
+        lr=0.0001,  
+        optimizer__weight_decay=1e-5,  
+        callbacks=[('early_stopping', skorch.callbacks.EarlyStopping(patience=25))]  
     )
+
 
     # Fit model
     model_skorch.fit(X_tensor, y_tensor)
 
     if submit:
-        model_skorch.fit(X_tensor, y_tensor)
-        y_pred = pd.DataFrame(model_skorch.predict(torch.tensor(test_data.values, dtype=torch.float32)))
+        y_pred = pd.DataFrame(model_skorch.predict(torch.tensor(test_data.values,dtype=torch.float32))) # predict using test data
         f.make_submission(y_pred, path)
+
     else:
-        #f.train_and_evaluate_model(model_skorch, X_tensor, y_tensor, X_test_tensor, y_test, plot=False)
-        model_skorch.fit(X_tensor, y_tensor)
-        y_pred = pd.DataFrame(model_skorch.predict(X_test_tensor))
-        f.test_error(y_test, y_pred) s
+        y_pred = pd.DataFrame(model_skorch.predict(torch.tensor(X_test.values,dtype=torch.float32))) # predict using test subset
+        f.test_error(y_test,y_pred,plot) # test the error on the test subset
+       
         
 def gradient_boost(X,
                    y,
