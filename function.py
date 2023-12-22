@@ -134,7 +134,7 @@ def process_data(train_data, test_data, include_cdd=False):
 
     train_data.columns = [str(col) for col in train_data.columns]
     test_data.columns = [str(col) for col in test_data.columns] 
-    
+
     return train_data, test_data
 
 def identify_columns_to_drop(df):
@@ -369,18 +369,15 @@ def train_and_evaluate_model(model, X_train, y_train, X_test, y_test, plot=False
     # Perform cross-validation and calculate the mean squared error
     cv_scores = cross_val_score(model, X_train, y_train, cv=kf, scoring='neg_root_mean_squared_error')
 
+    # Print cross-validation RMSE scores
+    print("Cross-Validation RMSE Scores:", -cv_scores)
+    print("Mean CV RMSE:", -cv_scores.mean())
+
     # Train the model on the training set
     model.fit(X_train, y_train)
 
     # Make predictions on the test set
     y_pred = pd.DataFrame(model.predict(X_test))
 
-    # Print cross-validation RMSE scores
-    print("Cross-Validation RMSE Scores:", -cv_scores)
-    print("Mean CV RMSE:", -cv_scores.mean())
-
     # Test the model
     test_error(y_test, y_pred, plot)
-
-
-
