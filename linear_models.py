@@ -1,119 +1,101 @@
 from sklearn.linear_model import Ridge, LinearRegression, Lasso
-from sklearn.model_selection import GridSearchCV 
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-import function as f 
+import function as f
+import random
+from sklearn.model_selection import train_test_split
+
+# Set a random seed for reproducibility
+random_seed = 2
+np.random.seed(random_seed)
+random.seed(random_seed)
+
+# Model testing parameters 
+submit = False
+plot = True
+select_features = False
+PCA = True
+CDDD = False
 
 # Load data
 train_data, test_data = f.read_file('train.csv','test.csv')
 
-# Drop categorical values
-test_data = test_data.drop(['SMILES', 'mol','Compound'], axis=1)
-train_data = train_data.drop(['SMILES','mol','Compound'], axis=1)
+# Process and clean data
+train_data, test_data = f.process_data(train_data,test_data, CDDD)
 
-# Columns to encode
-columns_to_encode = ['Lab']
+if PCA :
+    # Apply PCA
+    variance_ratio = 0.98
+    X,y = train_data.drop(['RT'], axis=1), train_data['RT']
+    X, test_data = f.apply_PCA(X, test_data, variance_ratio)
 
-# OneHotEncoder on train_data and test_data
-train_data_encoded, test_data_encoded = f.apply_one_hot_encoding(train_data, test_data, columns_to_encode)
+    train_data = pd.concat([X,y], axis=1)
 
-# Clean both train and test data using these columns
-train_data, test_data = f.clean_data(train_data_encoded, test_data_encoded)
-
-# Separate the features X and the target variable y
-train_subset = int(len(train_data) * 0.8)
+# Split training_data in a training an test set 
 X,y = train_data.drop(['RT'], axis=1), train_data['RT']
+X_train,X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, shuffle=True)
 
-# Separate train an test data
-X_train, X_test, y_train, y_test = f.split_data(train_data)
+# --------------------------------------------------- Ridge Model --------------------------------------------------- 
+""" 
+# Model testing parameters 
+file_path = 'ridge_sub.csv'
 
-""" # Apply PCA
-variance_ratio = 0.989
-X, test_data = f.apply_PCA(X, test_data, variance_ratio)
+# Define model
+model_ridge = Ridge(alpha= 0.11, random_state=random_seed)
 
-X_train = X.iloc[:train_subset, :]
-X_test = X.iloc[train_subset:, :]
-y_train = y.iloc[:train_subset]
-y_test = y.iloc[train_subset:]
-
-X_subset = pd.concat([X_train,y_train], axis=1).iloc[:train_subset,:]  """
-
-# --------------------------------------------------- Ridge Model with tuning --------------------------------------------------- 
+if not submit :
+    f.train_and_evaluate_model(model_ridge, X_train, y_train, X_test, y_test, plot=False)
+else :
+    model_ridge.fit(X,y) 
+    y_pred = pd.DataFrame(model_ridge.predict(test_data)) 
+    f.make_submission(y_pred, file_path)
+  """
+# --------------------------------------------------- Lasso --------------------------------------------------- 
+"""  
+# Model testing parameters 
+file_path = 'lasso.csv'
 
 # Define the parameter grid for tuning alpha
-param_grid = {
-    'alpha': np.logspace(-1, 5, num =30)
-}
+model_lasso = Lasso(alpha= 0.001,max_iter=10000, random_state=random_seed)
 
-# Model testing parameters 
-submit = False
-file_path = 'ridge_sub.csv'
-plot = True
+if not submit :
+    f.train_and_evaluate_model(model_lasso, X_train, y_train, X_test, y_test, plot=False)
 
-# Tune the Ridge Regressor model 
-ridge_model = f.tune_model(Ridge(), train_data, param_grid, submit)
+    if select_features and not PCA :
+        model_lasso.fit(X,y) 
 
-# Test the model
-f.model_test(train_data,test_data,ridge_model.best_estimator_,submit,file_path,plot)
+        # Extract interesting features 
+        feature_names = X.columns 
+        selected_features = feature_names[model_lasso.coef_ != 0]
 
-# --------------------------------------------------- Plots --------------------------------------------------- 
+        # Convert to list
+        selected_features_list = selected_features.tolist()
 
-""" # Plot results
-plt.figure()
-plt.plot(np.logspace(-5, 7, num =30), -ridge_model.cv_results_['mean_test_score'])
-plt.xscale('log')
-plt.xlabel('Alpha')
-plt.ylabel('RMSE')
-plt.title('Ridge Hyperparameter Tuning')
-plt.show() """
+        # Print selected features
+        print ("Selected Features != 0:", selected_features_list)
+        print ("length", len(selected_features_list))
 
-# --------------------------------------------------- Linear Regression not working --------------------------------------------------- 
-
-"""
-# Model testing parameters 
-submit = False
-file_path = 'linear_sub.csv'
-plot = True
-
-
-# Test the model
-f.model_test(train_data,test_data,LinearRegression(),submit,file_path,plot)
-"""
-
-#--------------------------------------------------- Ridge Regression without tuning ---------------------------------------------------
-
-"""
-# Model testing parameters 
-submit = False
-file_path = 'ridge_sub.csv'
-plot = True
-
-# Test the model
-f.model_test(train_data,test_data, Ridge(),submit,file_path,plot)
-
+else :
+    model_lasso.fit(X,y) 
+    y_pred = pd.DataFrame(model_lasso.predict(test_data)) 
+    f.make_submission(y_pred, file_path)
  """
+# --------------------------------------------------- Linear Regression --------------------------------------------------- 
 
-# --------------------------------------------------- Lasso not working --------------------------------------------------- 
+# Model testing parameters 
+file_path = 'linear_sub.csv'
 
-""" # Define the parameter grid for tuning alpha
-param_grid = {
-    'alpha': np.logspace(-1, 5, num =30)
-}
+# Define the parameter grid for tuning alpha
+model_lr = LinearRegression()
 
-# Tune the Lasso Regressor model 
-lasso_model = f.tune_model(Lasso(max_iter = 10000), train_data, param_grid, submit)
+if not submit :
+    f.train_and_evaluate_model(model_lr, X_train, y_train, X_test, y_test, plot=False)
+else :
+    model_lr.fit(X,y) 
+    y_pred = pd.DataFrame(model_lr.predict(test_data)) 
+    f.make_submission(y_pred, file_path)
+ 
 
-# Test the model
-f.model_test(train_data,test_data, lasso_model.best_estimator_ ,submit,file_path,plot)
 
-# Plot results
-plt.figure()
-plt.plot(np.logspace(-5, 7, num =30), -lasso_model.cv_results_['mean_test_score'])
-plt.xscale('log')
-plt.xlabel('Alpha')
-plt.ylabel('RMSE')
-plt.title('Lasso Hyperparameter Tuning')
-plt.show()  """
 
 
